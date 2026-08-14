@@ -4,6 +4,7 @@ import com.practise.feign.dto.OpenWeatherResponse;
 import com.practise.feign.dto.WeatherResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import java.util.*;
 
 @Mapper(componentModel = "spring")
 public interface WeatherMapper {
@@ -15,12 +16,12 @@ public interface WeatherMapper {
     WeatherResponse toResponse(OpenWeatherResponse response);
 
     default String mapDescription(
-            java.util.List<OpenWeatherResponse.Weather> weather) {
+            List<OpenWeatherResponse.Weather> weather) {
 
         if (weather == null || weather.isEmpty()) {
             return null;
         }
 
-        return weather.get(0).getDescription();
+        return weather.get(0).description();
     }
 }
