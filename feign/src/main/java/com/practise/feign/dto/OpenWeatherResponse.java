@@ -1,4 +1,6 @@
 package com.practise.feign.dto;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
 
 public record OpenWeatherResponse(
@@ -9,7 +11,8 @@ public record OpenWeatherResponse(
 
     public record Main(
             double temp,
-            double feels_like,
+            @JsonProperty("feels_like")
+            double feelsLike,
             int humidity
     ) {
     }

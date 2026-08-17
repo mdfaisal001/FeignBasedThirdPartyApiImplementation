@@ -11,7 +11,7 @@ public interface WeatherMapper {
 
     @Mapping(target = "city", source = "name")
     @Mapping(target = "temperature", source = "main.temp")
-    @Mapping(target = "feelsLike", source = "main.feels_like")
+    @Mapping(target = "feelsLike", source = "main.feelsLike")
     @Mapping(target = "description", source = "weather")
     WeatherResponse toResponse(OpenWeatherResponse response);
 
