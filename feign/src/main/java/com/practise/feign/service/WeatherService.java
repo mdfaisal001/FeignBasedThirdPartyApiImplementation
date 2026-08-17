@@ -2,6 +2,7 @@ package com.practise.feign.service;
 
 import com.practise.feign.client.WeatherClient;
 import com.practise.feign.dto.OpenWeatherResponse;
+import com.practise.feign.dto.WeatherQuery;
 import com.practise.feign.dto.WeatherResponse;
 import com.practise.feign.mapper.WeatherMapper;
 
@@ -19,9 +20,9 @@ public class WeatherService {
     }
 
     public WeatherResponse getWeather(String city){
+        WeatherQuery query = new WeatherQuery(city,"metric");
         OpenWeatherResponse response =weatherClient.getWeather(
-                city,
-                "metric"
+                query
         );
         return weatherMapper.toResponse(response);
     }
