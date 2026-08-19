@@ -1,7 +1,9 @@
 package com.practise.feign.config;
 
 import com.practise.feign.decoder.WeatherErrorDecoder;
+
 import feign.RequestInterceptor;
+import feign.Retryer;
 import feign.codec.ErrorDecoder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -20,4 +22,14 @@ public class OpenWeatherFeignConfig {
         return new WeatherErrorDecoder(objectMapper);
 
     }
+
+    @Bean
+    public Retryer retryer() {
+        return new Retryer.Default(
+                1000,
+                5000,
+                3
+        );
+    }
+
 }

@@ -9,6 +9,8 @@ import com.practise.feign.mapper.WeatherMapper;
 
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 
 @Service
 public class WeatherService {
@@ -19,13 +21,21 @@ public class WeatherService {
         this.weatherClient = weatherClient;
         this.weatherMapper = weatherMapper;
     }
-
+    private final AtomicInteger requestCount = new AtomicInteger();
     public WeatherResponse getWeather(String city){
+
+        int count = requestCount.incrementAndGet();
+        System.out.println(
+                "Feign request #" + count +
+                        " | city=" + city
+        );
         WeatherQuery query = new WeatherQuery(city,"metric");
+
+
         try {
             OpenWeatherResponse response =
                     weatherClient.getWeather(query);
-
+            System.out.println(response.name());
             return weatherMapper.toResponse(response);
 
         } catch (WeatherException e) {

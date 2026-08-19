@@ -3,6 +3,7 @@ package com.practise.feign.decoder;
 import com.practise.feign.dto.WeatherErrorResponse;
 import com.practise.feign.exceptions.WeatherException;
 import feign.Response;
+import feign.RetryableException;
 import feign.codec.ErrorDecoder;
 import tools.jackson.databind.ObjectMapper;
 
@@ -16,8 +17,17 @@ public class WeatherErrorDecoder implements ErrorDecoder {
     }
     @Override
     public Exception decode(String methodKey, Response response){
+
        try{
            if(response.body() != null){
+               if(response.status() == 404){
+                   System.out.println("404 occured");
+
+
+                   return new RetryableException(response.status(),"Testing retry",
+                           response.request().httpMethod(), (Long) null,response.request());
+
+               }
 
                WeatherErrorResponse errorResponse = objectMapper.readValue(response.body().asInputStream()
                        ,WeatherErrorResponse.class);
