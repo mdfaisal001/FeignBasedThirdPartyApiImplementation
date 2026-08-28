@@ -13,7 +13,6 @@ public interface WeatherMapper {
     @Mapping(target = "temperature", source = "main.temp")
     @Mapping(target = "feelsLike", source = "main.feelsLike")
     @Mapping(target = "description", source = "weather")
-    @Mapping(target = "humidity", source = "main.humidity")
     WeatherResponse toResponse(OpenWeatherResponse response);
 
     default String mapDescription(
