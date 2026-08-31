@@ -6,11 +6,16 @@ import com.practise.feign.dto.WeatherResponse;
 import com.practise.feign.exceptions.WeatherException;
 import com.practise.feign.service.WeatherService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.stream.Stream;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -25,38 +30,57 @@ public class WeatherControllerTest {
 
     @MockitoBean
     private WeatherService weatherService;
-    @Test
-    void shouldTheRequestReachTheServie() throws Exception{
 
-        WeatherResponse weatherResponse = new WeatherResponse("Hyderabad",
-                32.0,45.0,70,"cloudy");
+    static Stream <Arguments> weatherData(){
+        return Stream.of(
+                Arguments.of("Hyderabad",32.0,45.0,50,"cloudy"),
+                Arguments.of("kerala",23.0,59.0,30,"Heavy rain"),
+                Arguments.of("Hyderabad",39.0,75.0,100,"Heat waves")
+        );
+    }
 
-        when(weatherService.getWeather("Hyderabad")).thenReturn(weatherResponse);
-        mockMvc.perform(get("/api/v1/weather").param("city","Hyderabad"))
+   @ParameterizedTest
+   @MethodSource("weatherData")
+    void shouldTheRequestReachTheServie(String city, double temperature,
+                                        double feelsLike, int humidity, String description) throws Exception{
+
+        WeatherResponse weatherResponse = new WeatherResponse(city,temperature,feelsLike,humidity,description);
+
+        when(weatherService.getWeather(city)).thenReturn(weatherResponse);
+        mockMvc.perform(get("/api/v1/weather").param("city",city))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.city").value("Hyderabad"))
-                .andExpect(jsonPath("$.temperature").value(32.0))
-                .andExpect(jsonPath("$.feelsLike").value(45.0))
-                .andExpect(jsonPath("$.humidity").value(70))
-                .andExpect(jsonPath("$.description").value("cloudy"));
+                .andExpect(jsonPath("$.city").value(city))
+                .andExpect(jsonPath("$.temperature").value(temperature))
+                .andExpect(jsonPath("$.feelsLike").value(feelsLike))
+                .andExpect(jsonPath("$.humidity").value(humidity))
+                .andExpect(jsonPath("$.description").value(description));
 
 
-      verify(weatherService,times(1)).getWeather("Hyderabad");
+      verify(weatherService,times(1)).getWeather(city);
 
     }
 
-    @Test
-    void shouldTheRequestReturnTheException() throws Exception{
 
-        when(weatherService.getWeather("Chennai")).thenThrow(new WeatherException(404,"City not found"));
+    static Stream<Arguments> exceptionData(){
+        return Stream.of(
+                Arguments.of("madras",404,"city name was renamed"),
+                Arguments.of("bang",404,"city not found"),
+                Arguments.of("odissi",404,"Incorrect city name")
+        );
+    }
+   @ParameterizedTest
+   @MethodSource("exceptionData")
+    void shouldTheRequestReturnTheException(String city, int status, String message) throws Exception{
 
-        mockMvc.perform(get("/api/v1/weather").param("city", "Chennai"))
+        when(weatherService.getWeather(city)).thenThrow(new WeatherException(status,message));
+
+        mockMvc.perform(get("/api/v1/weather").param("city", city))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status").value(404))
-                .andExpect(jsonPath("$.message").value("City not found"));
+                .andExpect(jsonPath("$.status").value(status))
+                .andExpect(jsonPath("$.message").value(message));
 
 
-        verify(weatherService).getWeather("Chennai");
+        verify(weatherService).getWeather(city);
     }
 
 
