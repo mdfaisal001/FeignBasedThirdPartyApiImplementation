@@ -8,15 +8,20 @@ import com.practise.feign.exceptions.WeatherException;
 import com.practise.feign.mapper.WeatherMapper;
 import com.practise.feign.service.WeatherService;
 
+import net.bytebuddy.asm.MemberSubstitution;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,35 +38,46 @@ class WeatherServiceTest {
 
     @InjectMocks
     private WeatherService weatherService;
+    static Stream<Arguments> weatherData(){
+            return Stream.of(
+                    Arguments.of("Hyderabad", 30.4, 32.0, 70, "cloudy"),
+                    Arguments.of("Chennai", 31.5, 33.0, 75, "sunny"),
+                    Arguments.of("Bangalore", 25.0, 26.0, 65, "rainy")
+            );
+    }
 
-
-    @Test
-    void shouldReturnResponse() {
+    @ParameterizedTest
+    @MethodSource("weatherData")
+    void shouldReturnResponse( String city,
+                               double temperature,
+                               double feelsLike,
+                               int humidity,
+                               String description) {
 
         OpenWeatherResponse.Main main =
                 new OpenWeatherResponse.Main(
-                        30.4,
-                        32.0,
-                        70
+                        temperature,
+                        feelsLike,
+                        humidity
                 );
 
         OpenWeatherResponse.Weather weather =
-                new OpenWeatherResponse.Weather("cloudy");
+                new OpenWeatherResponse.Weather(description);
 
         OpenWeatherResponse response =
                 new OpenWeatherResponse(
-                        "Hyderabad",
+                        city,
                         main,
                         List.of(weather)
                 );
 
         WeatherResponse expectedResponse =
                 new WeatherResponse(
-                        "Hyderabad",
-                        30.4,
-                        32.0,
-                        70,
-                        "cloudy"
+                        city,
+                        temperature,
+                        feelsLike,
+                        humidity,
+                        description
                 );
 
         when(weatherClient.getWeather(any(WeatherQuery.class)))
@@ -71,7 +87,7 @@ class WeatherServiceTest {
                 .thenReturn(expectedResponse);
 
         WeatherResponse actual =
-                weatherService.getWeather("Hyderabad");
+                weatherService.getWeather(city);
 
         assertEquals(expectedResponse, actual);
 
@@ -84,7 +100,7 @@ class WeatherServiceTest {
         WeatherQuery actualQuery =
                 captor.getValue();
 
-        assertEquals("Hyderabad", actualQuery.q());
+        assertEquals(city, actualQuery.q());
         assertEquals("metric", actualQuery.units());
 
         verify(weatherMapper)
@@ -92,13 +108,22 @@ class WeatherServiceTest {
     }
 
 
-    @Test
-    void shouldPropagateWeatherException() {
+    static Stream<Arguments> weatherExceptionData() {
+        return Stream.of(
+                Arguments.of("Hyderabad", 404, "City not found"),
+                Arguments.of("Chennai", 400, "Invalid city"),
+                Arguments.of("Bangalore", 500, "Weather service failed")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("weatherExceptionData")
+    void shouldPropagateWeatherException(String city, int status, String message) {
 
         WeatherException exception =
                 new WeatherException(
-                        404,
-                        "City not found"
+                        status,
+                        message
                 );
 
         when(weatherClient.getWeather(any(WeatherQuery.class)))
@@ -107,12 +132,12 @@ class WeatherServiceTest {
         WeatherException actualException =
                 assertThrows(
                         WeatherException.class,
-                        () -> weatherService.getWeather("Hyderabad")
+                        () -> weatherService.getWeather(city)
                 );
 
-        assertEquals(404, actualException.getStatus());
+        assertEquals(status, actualException.getStatus());
         assertEquals(
-                "City not found",
+                message,
                 actualException.getMessage()
         );
 

@@ -5,10 +5,16 @@ import com.practise.feign.exceptions.GlobalExceptionHandler;
 import com.practise.feign.exceptions.WeatherException;
 import feign.Request;
 import feign.RetryableException;
+
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.ResponseEntity;
 
+
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -18,26 +24,43 @@ public class GlobalExceptionHandlerTest {
     void setHandler(){
         handler = new GlobalExceptionHandler();
     }
-    @Test
-    void shouldHandleWeatherException(){
 
 
-        WeatherException exception = new WeatherException(404,"City not found");
+    static Stream<Arguments> weatherExceptionData(){
+        return Stream.of(
+                Arguments.of(404,"City not found"),
+                Arguments.of(404,"Invalid City"),
+                Arguments.of(500,"Weather Service failed")
+        );
+    }
+    @ParameterizedTest
+    @MethodSource("weatherExceptionData")
+    void shouldHandleWeatherException(int status,String message){
+
+
+        WeatherException exception = new WeatherException(status,message);
         ResponseEntity<ClientErrorResponse> response = handler.handleWeatherApiException(exception);
 
-        assertEquals(404,response.getStatusCode().value());
+        assertEquals(status,response.getStatusCode().value());
         assertNotNull(response.getBody());
-        assertEquals(404,response.getBody().status());
-        assertEquals("City not found",response.getBody().message());
+        assertEquals(status,response.getBody().status());
+        assertEquals(message,response.getBody().message());
     }
 
-    @Test
-
-    void shouldHandleRetryableException(){
+    static Stream<Arguments> retryableData(){
+        return Stream.of(
+                Arguments.of(503, "Weather Service not found"),
+                Arguments.of(500, "Internal server error"),
+                Arguments.of(429, "Too many requests")
+        );
+    }
+    @ParameterizedTest
+    @MethodSource("retryableData")
+    void shouldHandleRetryableException(int status,String message){
         RetryableException exception =
                 new RetryableException(
-                        503,
-                        "Weather Service not found",
+                        status,
+                        message,
                         Request.HttpMethod.GET,
                         (Long) null,
                         Request.create(
@@ -52,7 +75,6 @@ public class GlobalExceptionHandlerTest {
         ResponseEntity<ClientErrorResponse> response = handler.handleRetryerException(exception);
 
         assertEquals(503,response.getStatusCode().value());
-        assertEquals("Weather Service not found",exception.getMessage());
         assertNotNull(response.getBody());
         assertEquals(503,response.getBody().status());
         assertEquals("Weather service is temporary unavailabe",response.getBody().message());
