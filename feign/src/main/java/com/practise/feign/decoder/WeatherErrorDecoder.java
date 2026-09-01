@@ -5,6 +5,7 @@ import com.practise.feign.exceptions.WeatherException;
 import feign.Response;
 import feign.RetryableException;
 import feign.codec.ErrorDecoder;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -36,8 +37,11 @@ public class WeatherErrorDecoder implements ErrorDecoder {
            }
 
        }
-       catch(IOException e){
-           return new WeatherException(response.status(), "Failed to read the api response");
+       catch (IOException | JacksonException e) {
+           return new WeatherException(
+                   response.status(),
+                   "Failed to read the api response"
+           );
        }
 
        return new WeatherException(response.status(),"Weather api request failed");
